@@ -29,19 +29,19 @@ public class DefaultActivitySchedulerMiddleware(WorkflowMiddlewareDelegate next,
 
         context.TransitionTo(WorkflowSubStatus.Executing);
         await ConditionallyCommitStateAsync(context, WorkflowLifetimeEvent.WorkflowExecuting);
-        
+
         while (scheduler.HasAny)
         {
             // Do not start a workflow if cancellation has been requested.
             if (context.CancellationToken.IsCancellationRequested)
                 break;
-            
+
             var currentWorkItem = scheduler.Take();
             await ExecuteWorkItemAsync(context, currentWorkItem);
         }
-        
+
         await Next(context);
-        
+
         if (context.Status == WorkflowStatus.Running)
             context.TransitionTo(context.AllActivitiesCompleted() ? WorkflowSubStatus.Finished : WorkflowSubStatus.Suspended);
     }
@@ -59,18 +59,18 @@ public class DefaultActivitySchedulerMiddleware(WorkflowMiddlewareDelegate next,
 
         await activityInvoker.InvokeAsync(context, workItem.Activity, options);
     }
-    
+
     private async Task ConditionallyCommitStateAsync(WorkflowExecutionContext context, WorkflowLifetimeEvent lifetimeEvent)
     {
         var strategyName = context.Workflow.Options.CommitStrategyName;
         var strategy = string.IsNullOrWhiteSpace(strategyName) ? null : commitStrategyRegistry.FindWorkflowStrategy(strategyName);
-        
-        if(strategy == null)
+
+        if (strategy == null)
             return;
-        
+
         var strategyContext = new WorkflowCommitStateStrategyContext(context, lifetimeEvent);
         var commitAction = strategy.ShouldCommit(strategyContext);
-        
+
         if (commitAction is CommitAction.Commit)
             await context.CommitAsync();
     }

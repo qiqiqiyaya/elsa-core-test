@@ -13,9 +13,9 @@ namespace ElsaServer.Workflows
         protected override void Build(IWorkflowBuilder builder)
         {
             var code = builder.WithVariable<string>();
+            var routeDataVariable = builder.WithVariable<IDictionary<string, object>>();
             var userVariable = builder.WithVariable<ExpandoObject>();
-            var request = builder.WithOutput<HttpRequest>("request");
-            MemoryBlockReference content = new MemoryBlockReference();
+            var content = builder.WithVariable<ExpandoObject>();
 
             builder.Root = new Sequence()
             {
@@ -26,17 +26,20 @@ namespace ElsaServer.Workflows
                         Path = new("leavatest"),
                         SupportedMethods = new Input<ICollection<string>>(new List<string>(){HttpMethods.Post}),
                         CanStartWorkflow = true,
-                        ParsedContent = new Output<object?>(content),
-                        Result =new Output<HttpRequest>()
+                        ParsedContent = new(content),
+                        Result =new Output<HttpRequest>(),
+                        RouteData = new(routeDataVariable)
                     },
                     new SetVariable
                     {
                         Variable = code,
                         Value = new Input<object?>(context =>
                         {
-                            var dsfdsf = code.Get(context);
-                            var cc = request;
-                            var aaaa = content.Get(context);
+                            var aacc= content.Get(context);
+
+                            //var dsfdsf = code.Get(context);
+                            //var cc = request;
+                            //var aaaa = content.Get(context);
                             var aa = context;
                             //var routeData = routeDataVariable.Get(context)!;
                             //var userId = routeData["userid"].ToString();
@@ -45,15 +48,32 @@ namespace ElsaServer.Workflows
                     },
                     new If(context =>
                     {
-                        if (context.TransientProperties.TryGetValue("IsManager", out bool te))
-                        {
-                            return te;
-                        }
-
-                        return false;
+                        var obj= content.Get(context);
+                        var result= obj!?.GetValue<bool>("IsManager")?? false;
+                        return result;
                     })
+                    {
+                        Then = new WriteHttpResponse()
+                        {
+                            Content=new Input<object?>(context =>
+                            {
+                                return content.Get(context);
+                            })
+                        },
+                        Else = new WriteFileHttpResponse()
+                        {
+                            Content = new ("failed")
+                        }
+                    }
                 }
             };
         }
+    }
+
+    public class Leavatest
+    {
+        public bool IsManager { get; set; }
+
+        public bool EmployeeCode { get; set; }
     }
 }
