@@ -15,7 +15,7 @@ namespace ElsaServer.Workflows
             var code = builder.WithVariable<string>();
             var routeDataVariable = builder.WithVariable<IDictionary<string, object>>();
             var userVariable = builder.WithVariable<ExpandoObject>();
-            var content = builder.WithVariable<ExpandoObject>();
+            var content = builder.WithVariable<Leavatest>();
 
             builder.Root = new Sequence()
             {
@@ -24,7 +24,7 @@ namespace ElsaServer.Workflows
                     new HttpEndpoint()
                     {
                         Path = new("leavatest"),
-                        SupportedMethods = new Input<ICollection<string>>(new List<string>(){HttpMethods.Post}),
+                        SupportedMethods = new ([HttpMethods.Post]),
                         CanStartWorkflow = true,
                         ParsedContent = new(content),
                         Result =new Output<HttpRequest>(),
@@ -35,7 +35,7 @@ namespace ElsaServer.Workflows
                         Variable = code,
                         Value = new Input<object?>(context =>
                         {
-                            var aacc= content.Get(context);
+                            var aacc= content.Get(context)!;
 
                             //var dsfdsf = code.Get(context);
                             //var cc = request;
@@ -48,8 +48,8 @@ namespace ElsaServer.Workflows
                     },
                     new If(context =>
                     {
-                        var obj= content.Get(context);
-                        var result= obj!?.GetValue<bool>("IsManager")?? false;
+                        var obj= content.Get(context)!;
+                        var result= obj.IsManager;
                         return result;
                     })
                     {
@@ -74,6 +74,6 @@ namespace ElsaServer.Workflows
     {
         public bool IsManager { get; set; }
 
-        public bool EmployeeCode { get; set; }
+        public string EmployeeCode { get; set; }
     }
 }
